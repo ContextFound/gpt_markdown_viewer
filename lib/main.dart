@@ -359,7 +359,8 @@ void main() {
                 ),
                 const Spacer(),
                 Text(
-                  'gpt_markdown v1.1.5',
+                  // 'gpt_markdown v1.1.5',
+                  'gpt_markdown: https://github.com/ContextFound/gpt_markdown.git',
                   style: TextStyle(
                     color: const Color(0xFF8888AA).withValues(alpha: 0.6),
                     fontSize: 11,
