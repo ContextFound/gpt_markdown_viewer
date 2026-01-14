@@ -1,20 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   runApp(const MarkdownValidatorApp());
 }
 
-class MarkdownValidatorApp extends StatelessWidget {
+class MarkdownValidatorApp extends StatefulWidget {
   const MarkdownValidatorApp({super.key});
+
+  @override
+  State<MarkdownValidatorApp> createState() => _MarkdownValidatorAppState();
+}
+
+class _MarkdownValidatorAppState extends State<MarkdownValidatorApp> {
+  ThemeMode _themeMode = ThemeMode.dark;
+
+  void _toggleTheme() {
+    setState(() {
+      _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'GPT Markdown Validator',
       debugShowCheckedModeBanner: false,
+      themeMode: _themeMode,
       theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1A1A2E),
+          brightness: Brightness.light,
+        ),
+        scaffoldBackgroundColor: const Color(0xFFF5F5FA),
+        useMaterial3: true,
+        fontFamily: 'JetBrains Mono',
+      ),
+      darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF1A1A2E),
           brightness: Brightness.dark,
@@ -23,13 +47,23 @@ class MarkdownValidatorApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'JetBrains Mono',
       ),
-      home: const MarkdownValidatorScreen(),
+      home: MarkdownValidatorScreen(
+        isDarkMode: _themeMode == ThemeMode.dark,
+        onToggleTheme: _toggleTheme,
+      ),
     );
   }
 }
 
 class MarkdownValidatorScreen extends StatefulWidget {
-  const MarkdownValidatorScreen({super.key});
+  const MarkdownValidatorScreen({
+    super.key,
+    required this.isDarkMode,
+    required this.onToggleTheme,
+  });
+
+  final bool isDarkMode;
+  final VoidCallback onToggleTheme;
 
   @override
   State<MarkdownValidatorScreen> createState() =>
@@ -68,7 +102,7 @@ void main() {
 
 [ ] checkbox 1
 [x] checkbox 2
-[Click Here](/foo "title")
+[Click Here](https://github.com/Infinitix-LLC/gpt_markdown "title")
 [ ] checkbox 4
 
 | Feature | Supported |
@@ -102,13 +136,21 @@ void main() {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = widget.isDarkMode;
+    
+    // Theme-aware colors
+    final gradientColors = isDark
+        ? [const Color(0xFF0F0F1A), const Color(0xFF1A1A2E), const Color(0xFF16213E)]
+        : [const Color(0xFFF0F4F8), const Color(0xFFE8EDF5), const Color(0xFFE0E8F0)];
+    final titleColor = isDark ? Colors.white : const Color(0xFF1A1A2E);
+    
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF0F0F1A), Color(0xFF1A1A2E), Color(0xFF16213E)],
+            colors: gradientColors,
           ),
         ),
         child: SafeArea(
@@ -136,13 +178,41 @@ void main() {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Text(
+                    Text(
                       'GPT Markdown Validator',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: titleColor,
                         letterSpacing: -0.5,
+                      ),
+                    ),
+                    const Spacer(),
+                    // Theme Toggle Button
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: widget.onToggleTheme,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFFFFAA00).withValues(alpha: 0.1)
+                                : const Color(0xFF6366F1).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark
+                                  ? const Color(0xFFFFAA00).withValues(alpha: 0.3)
+                                  : const Color(0xFF6366F1).withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Icon(
+                            isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                            color: isDark ? const Color(0xFFFFAA00) : const Color(0xFF6366F1),
+                            size: 24,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -168,8 +238,8 @@ void main() {
                             end: Alignment.bottomCenter,
                             colors: [
                               const Color(0xFF00D9FF).withValues(alpha: 0),
-                              const Color(0xFF00D9FF).withValues(alpha: 0.5),
-                              const Color(0xFFFF006E).withValues(alpha: 0.5),
+                              Color(0xFF00D9FF).withValues(alpha: isDark ? 0.5 : 0.7),
+                              Color(0xFFFF006E).withValues(alpha: isDark ? 0.5 : 0.7),
                               const Color(0xFFFF006E).withValues(alpha: 0),
                             ],
                           ),
@@ -193,14 +263,24 @@ void main() {
   }
 
   Widget _buildInputSection() {
+    final isDark = widget.isDarkMode;
+    
+    // Theme-aware colors
+    final containerColor = isDark ? const Color(0xFF1E1E32) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2D2D44) : const Color(0xFFE0E4EA);
+    final labelColor = isDark ? const Color(0xFF8888AA) : const Color(0xFF6B7280);
+    final textColor = isDark ? const Color(0xFFE0E0E0) : const Color(0xFF1F2937);
+    final hintColor = isDark ? const Color(0xFF555566) : const Color(0xFF9CA3AF);
+    final shadowColor = isDark ? Colors.black.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.08);
+    
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E32),
+        color: containerColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2D2D44)),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: shadowColor,
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -212,8 +292,8 @@ void main() {
           // Input Header
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Color(0xFF2D2D44))),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: borderColor)),
             ),
             child: Row(
               children: [
@@ -226,10 +306,10 @@ void main() {
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Text(
+                Text(
                   'Markdown Input',
                   style: TextStyle(
-                    color: Color(0xFF8888AA),
+                    color: labelColor,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.5,
@@ -294,17 +374,17 @@ void main() {
               maxLines: null,
               expands: true,
               textAlignVertical: TextAlignVertical.top,
-              style: const TextStyle(
-                color: Color(0xFFE0E0E0),
+              style: TextStyle(
+                color: textColor,
                 fontSize: 14,
                 height: 1.6,
                 fontFamily: 'JetBrains Mono',
               ),
-              decoration: const InputDecoration(
-                contentPadding: EdgeInsets.all(20),
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.all(20),
                 border: InputBorder.none,
                 hintText: 'Enter your markdown here...',
-                hintStyle: TextStyle(color: Color(0xFF555566)),
+                hintStyle: TextStyle(color: hintColor),
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -315,14 +395,23 @@ void main() {
   }
 
   Widget _buildPreviewSection() {
+    final isDark = widget.isDarkMode;
+    
+    // Theme-aware colors
+    final containerColor = isDark ? const Color(0xFF1E1E32) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2D2D44) : const Color(0xFFE0E4EA);
+    final labelColor = isDark ? const Color(0xFF8888AA) : const Color(0xFF6B7280);
+    final textColor = isDark ? const Color(0xFFE0E0E0) : const Color(0xFF1F2937);
+    final shadowColor = isDark ? Colors.black.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.08);
+    
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E32),
+        color: containerColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2D2D44)),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: shadowColor,
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -334,8 +423,8 @@ void main() {
           // Preview Header
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Color(0xFF2D2D44))),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: borderColor)),
             ),
             child: Row(
               children: [
@@ -348,10 +437,10 @@ void main() {
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Text(
+                Text(
                   'Preview',
                   style: TextStyle(
-                    color: Color(0xFF8888AA),
+                    color: labelColor,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.5,
@@ -362,7 +451,7 @@ void main() {
                   // 'gpt_markdown v1.1.5',
                   'gpt_markdown: https://github.com/ContextFound/gpt_markdown.git',
                   style: TextStyle(
-                    color: const Color(0xFF8888AA).withValues(alpha: 0.6),
+                    color: labelColor.withValues(alpha: 0.6),
                     fontSize: 11,
                     letterSpacing: 0.3,
                   ),
@@ -376,11 +465,17 @@ void main() {
               padding: const EdgeInsets.all(20),
               child: GptMarkdown(
                 _controller.text,
-                style: const TextStyle(
-                  color: Color(0xFFE0E0E0),
+                style: TextStyle(
+                  color: textColor,
                   fontSize: 15,
                   height: 1.6,
                 ),
+                onLinkTap: (url, title) async {
+                  final uri = Uri.tryParse(url);
+                  if (uri != null && await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
               ),
             ),
           ),

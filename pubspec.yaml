@@ -14,6 +14,7 @@ dependencies:
     git:
       url: https://github.com/contextfound/gpt_markdown.git
       ref: my-fork-main
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
