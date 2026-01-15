@@ -16,10 +16,29 @@ class MarkdownValidatorApp extends StatefulWidget {
 
 class _MarkdownValidatorAppState extends State<MarkdownValidatorApp> {
   ThemeMode _themeMode = ThemeMode.dark;
+  Color _seedColor = Colors.blue;
+
+  static const Map<String, Color> colorOptions = {
+    'Blue': Colors.blue,
+    'Purple': Colors.deepPurple,
+    'Teal': Colors.teal,
+    'Green': Colors.green,
+    'Orange': Colors.orange,
+    'Red': Colors.red,
+    'Pink': Colors.pink,
+    'Indigo': Colors.indigo,
+    'Blue Grey': Colors.blueGrey,
+  };
 
   void _toggleTheme() {
     setState(() {
       _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    });
+  }
+
+  void _setSeedColor(Color color) {
+    setState(() {
+      _seedColor = color;
     });
   }
 
@@ -31,25 +50,26 @@ class _MarkdownValidatorAppState extends State<MarkdownValidatorApp> {
       themeMode: _themeMode,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1A1A2E),
+          seedColor: _seedColor,
           brightness: Brightness.light,
         ),
-        scaffoldBackgroundColor: const Color(0xFFF5F5FA),
         useMaterial3: true,
         fontFamily: 'JetBrains Mono',
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1A1A2E),
+          seedColor: _seedColor,
           brightness: Brightness.dark,
         ),
-        scaffoldBackgroundColor: const Color(0xFF0F0F1A),
         useMaterial3: true,
         fontFamily: 'JetBrains Mono',
       ),
       home: MarkdownValidatorScreen(
         isDarkMode: _themeMode == ThemeMode.dark,
         onToggleTheme: _toggleTheme,
+        seedColor: _seedColor,
+        colorOptions: colorOptions,
+        onColorChanged: _setSeedColor,
       ),
     );
   }
@@ -60,10 +80,16 @@ class MarkdownValidatorScreen extends StatefulWidget {
     super.key,
     required this.isDarkMode,
     required this.onToggleTheme,
+    required this.seedColor,
+    required this.colorOptions,
+    required this.onColorChanged,
   });
 
   final bool isDarkMode;
   final VoidCallback onToggleTheme;
+  final Color seedColor;
+  final Map<String, Color> colorOptions;
+  final ValueChanged<Color> onColorChanged;
 
   @override
   State<MarkdownValidatorScreen> createState() =>
@@ -188,6 +214,60 @@ void main() {
                       ),
                     ),
                     const Spacer(),
+                    // Color Picker Dropdown
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: widget.seedColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: widget.seedColor.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<Color>(
+                          value: widget.seedColor,
+                          icon: Icon(
+                            Icons.arrow_drop_down,
+                            color: widget.seedColor,
+                          ),
+                          dropdownColor: isDark ? const Color(0xFF1E1E32) : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          items: widget.colorOptions.entries.map((entry) {
+                            return DropdownMenuItem<Color>(
+                              value: entry.value,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 16,
+                                    height: 16,
+                                    decoration: BoxDecoration(
+                                      color: entry.value,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    entry.key,
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (color) {
+                            if (color != null) {
+                              widget.onColorChanged(color);
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     // Theme Toggle Button
                     Material(
                       color: Colors.transparent,
@@ -401,7 +481,6 @@ void main() {
     final containerColor = isDark ? const Color(0xFF1E1E32) : Colors.white;
     final borderColor = isDark ? const Color(0xFF2D2D44) : const Color(0xFFE0E4EA);
     final labelColor = isDark ? const Color(0xFF8888AA) : const Color(0xFF6B7280);
-    final textColor = isDark ? const Color(0xFFE0E0E0) : const Color(0xFF1F2937);
     final shadowColor = isDark ? Colors.black.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.08);
     
     return Container(
