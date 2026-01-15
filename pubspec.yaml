@@ -12,7 +12,7 @@ dependencies:
   # gpt_markdown: ^1.1.5
   gpt_markdown:
     git:
-      url: https://github.com/contextfound/gpt_markdown.git
+      url: https://github.com/ContextFound/gpt_markdown.git
       ref: my-fork-main
   url_launcher: ^6.3.2
 

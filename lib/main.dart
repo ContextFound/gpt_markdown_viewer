@@ -465,11 +465,6 @@ void main() {
               padding: const EdgeInsets.all(20),
               child: GptMarkdown(
                 _controller.text,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 15,
-                  height: 1.6,
-                ),
                 onLinkTap: (url, title) async {
                   final uri = Uri.tryParse(url);
                   if (uri != null && await canLaunchUrl(uri)) {
