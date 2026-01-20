@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   # gpt_markdown: ^1.1.5
+  flutter_riverpod: ^3.2.0
   gpt_markdown:
     git:
       url: https://github.com/ContextFound/gpt_markdown.git

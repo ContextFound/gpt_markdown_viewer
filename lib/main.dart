@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'providers/markdown.provider.dart';
+import 'widgets/reorderable_list.widget.dart';
+
 void main() {
-  runApp(const MarkdownValidatorApp());
+  runApp(const ProviderScope(child: MarkdownValidatorApp()));
 }
 
 class MarkdownValidatorApp extends StatefulWidget {
@@ -32,7 +36,9 @@ class _MarkdownValidatorAppState extends State<MarkdownValidatorApp> {
 
   void _toggleTheme() {
     setState(() {
-      _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+      _themeMode = _themeMode == ThemeMode.dark
+          ? ThemeMode.light
+          : ThemeMode.dark;
     });
   }
 
@@ -75,7 +81,7 @@ class _MarkdownValidatorAppState extends State<MarkdownValidatorApp> {
   }
 }
 
-class MarkdownValidatorScreen extends StatefulWidget {
+class MarkdownValidatorScreen extends ConsumerStatefulWidget {
   const MarkdownValidatorScreen({
     super.key,
     required this.isDarkMode,
@@ -92,67 +98,35 @@ class MarkdownValidatorScreen extends StatefulWidget {
   final ValueChanged<Color> onColorChanged;
 
   @override
-  State<MarkdownValidatorScreen> createState() =>
+  ConsumerState<MarkdownValidatorScreen> createState() =>
       _MarkdownValidatorScreenState();
 }
 
-class _MarkdownValidatorScreenState extends State<MarkdownValidatorScreen> {
-  final TextEditingController _controller = TextEditingController();
+class _MarkdownValidatorScreenState
+    extends ConsumerState<MarkdownValidatorScreen> {
+  late final TextEditingController _controller;
   bool _copied = false;
-
-  static const String _sampleMarkdown = '''# Welcome to GPT Markdown Validator
-
-This tool helps you test **Markdown** rendering with the `gpt_markdown` library.
-
-## Features
-
-- Real-time preview
-- LaTeX support: \$E = mc^2\$
-- Code blocks with syntax highlighting
-
-```dart
-void main() {
-  print('Hello, Markdown!');
-}
-```
-
-### Try it out!
-
-1. Edit the text above
-2. See changes instantly below
-3. Copy your markdown when ready
-
-> "The best way to test is to experiment."
-
----
-
-[ ] checkbox 1
-[x] checkbox 2
-[Click Here](https://github.com/Infinitix-LLC/gpt_markdown "title")
-[ ] checkbox 4
-
-| Feature | Supported |
-|---------|-----------|
-| Headers | ✓ |
-| Lists | ✓ |
-| Tables | ✓ |
-| LaTeX | ✓ |
-''';
 
   @override
   void initState() {
     super.initState();
-    _controller.text = _sampleMarkdown;
+    _controller = TextEditingController(text: ref.read(markdownProvider));
+    _controller.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    ref.read(markdownProvider.notifier).updateMarkdown(_controller.text);
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_onTextChanged);
     _controller.dispose();
     super.dispose();
   }
 
   Future<void> _copyToClipboard() async {
-    await Clipboard.setData(ClipboardData(text: _controller.text));
+    await Clipboard.setData(ClipboardData(text: ref.read(markdownProvider)));
     setState(() => _copied = true);
     await Future.delayed(const Duration(seconds: 2));
     if (mounted) {
@@ -163,13 +137,21 @@ void main() {
   @override
   Widget build(BuildContext context) {
     final isDark = widget.isDarkMode;
-    
+
     // Theme-aware colors
     final gradientColors = isDark
-        ? [const Color(0xFF0F0F1A), const Color(0xFF1A1A2E), const Color(0xFF16213E)]
-        : [const Color(0xFFF0F4F8), const Color(0xFFE8EDF5), const Color(0xFFE0E8F0)];
+        ? [
+            const Color(0xFF0F0F1A),
+            const Color(0xFF1A1A2E),
+            const Color(0xFF16213E),
+          ]
+        : [
+            const Color(0xFFF0F4F8),
+            const Color(0xFFE8EDF5),
+            const Color(0xFFE0E8F0),
+          ];
     final titleColor = isDark ? Colors.white : const Color(0xFF1A1A2E);
-    
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -216,7 +198,10 @@ void main() {
                     const Spacer(),
                     // Color Picker Dropdown
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: widget.seedColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -231,7 +216,9 @@ void main() {
                             Icons.arrow_drop_down,
                             color: widget.seedColor,
                           ),
-                          dropdownColor: isDark ? const Color(0xFF1E1E32) : Colors.white,
+                          dropdownColor: isDark
+                              ? const Color(0xFF1E1E32)
+                              : Colors.white,
                           borderRadius: BorderRadius.circular(12),
                           items: widget.colorOptions.entries.map((entry) {
                             return DropdownMenuItem<Color>(
@@ -251,7 +238,9 @@ void main() {
                                   Text(
                                     entry.key,
                                     style: TextStyle(
-                                      color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF1A1A2E),
                                       fontSize: 13,
                                     ),
                                   ),
@@ -279,17 +268,27 @@ void main() {
                           decoration: BoxDecoration(
                             color: isDark
                                 ? const Color(0xFFFFAA00).withValues(alpha: 0.1)
-                                : const Color(0xFF6366F1).withValues(alpha: 0.1),
+                                : const Color(
+                                    0xFF6366F1,
+                                  ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: isDark
-                                  ? const Color(0xFFFFAA00).withValues(alpha: 0.3)
-                                  : const Color(0xFF6366F1).withValues(alpha: 0.3),
+                                  ? const Color(
+                                      0xFFFFAA00,
+                                    ).withValues(alpha: 0.3)
+                                  : const Color(
+                                      0xFF6366F1,
+                                    ).withValues(alpha: 0.3),
                             ),
                           ),
                           child: Icon(
-                            isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                            color: isDark ? const Color(0xFFFFAA00) : const Color(0xFF6366F1),
+                            isDark
+                                ? Icons.light_mode_rounded
+                                : Icons.dark_mode_rounded,
+                            color: isDark
+                                ? const Color(0xFFFFAA00)
+                                : const Color(0xFF6366F1),
                             size: 24,
                           ),
                         ),
@@ -318,8 +317,12 @@ void main() {
                             end: Alignment.bottomCenter,
                             colors: [
                               const Color(0xFF00D9FF).withValues(alpha: 0),
-                              Color(0xFF00D9FF).withValues(alpha: isDark ? 0.5 : 0.7),
-                              Color(0xFFFF006E).withValues(alpha: isDark ? 0.5 : 0.7),
+                              Color(
+                                0xFF00D9FF,
+                              ).withValues(alpha: isDark ? 0.5 : 0.7),
+                              Color(
+                                0xFFFF006E,
+                              ).withValues(alpha: isDark ? 0.5 : 0.7),
                               const Color(0xFFFF006E).withValues(alpha: 0),
                             ],
                           ),
@@ -344,15 +347,25 @@ void main() {
 
   Widget _buildInputSection() {
     final isDark = widget.isDarkMode;
-    
+
     // Theme-aware colors
     final containerColor = isDark ? const Color(0xFF1E1E32) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF2D2D44) : const Color(0xFFE0E4EA);
-    final labelColor = isDark ? const Color(0xFF8888AA) : const Color(0xFF6B7280);
-    final textColor = isDark ? const Color(0xFFE0E0E0) : const Color(0xFF1F2937);
-    final hintColor = isDark ? const Color(0xFF555566) : const Color(0xFF9CA3AF);
-    final shadowColor = isDark ? Colors.black.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.08);
-    
+    final borderColor = isDark
+        ? const Color(0xFF2D2D44)
+        : const Color(0xFFE0E4EA);
+    final labelColor = isDark
+        ? const Color(0xFF8888AA)
+        : const Color(0xFF6B7280);
+    final textColor = isDark
+        ? const Color(0xFFE0E0E0)
+        : const Color(0xFF1F2937);
+    final hintColor = isDark
+        ? const Color(0xFF555566)
+        : const Color(0xFF9CA3AF);
+    final shadowColor = isDark
+        ? Colors.black.withValues(alpha: 0.3)
+        : Colors.black.withValues(alpha: 0.08);
+
     return Container(
       decoration: BoxDecoration(
         color: containerColor,
@@ -476,13 +489,19 @@ void main() {
 
   Widget _buildPreviewSection() {
     final isDark = widget.isDarkMode;
-    
+
     // Theme-aware colors
     final containerColor = isDark ? const Color(0xFF1E1E32) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF2D2D44) : const Color(0xFFE0E4EA);
-    final labelColor = isDark ? const Color(0xFF8888AA) : const Color(0xFF6B7280);
-    final shadowColor = isDark ? Colors.black.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.08);
-    
+    final borderColor = isDark
+        ? const Color(0xFF2D2D44)
+        : const Color(0xFFE0E4EA);
+    final labelColor = isDark
+        ? const Color(0xFF8888AA)
+        : const Color(0xFF6B7280);
+    final shadowColor = isDark
+        ? Colors.black.withValues(alpha: 0.3)
+        : Colors.black.withValues(alpha: 0.08);
+
     return Container(
       decoration: BoxDecoration(
         color: containerColor,
@@ -543,7 +562,21 @@ void main() {
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: GptMarkdown(
-                _controller.text,
+                ref.watch(markdownProvider),
+                listGroupBuilder: (context, items, config) {
+                  return ReorderableMarkdownList(
+                    items: items,
+                    onReorder: (oldIndex, newIndex) {
+                      ref
+                          .read(markdownProvider.notifier)
+                          .reorderListItems(items, oldIndex, newIndex);
+                      // Sync controller with updated markdown
+                      _controller.removeListener(_onTextChanged);
+                      _controller.text = ref.read(markdownProvider);
+                      _controller.addListener(_onTextChanged);
+                    },
+                  );
+                },
                 onLinkTap: (url, title) async {
                   final uri = Uri.tryParse(url);
                   if (uri != null && await canLaunchUrl(uri)) {
