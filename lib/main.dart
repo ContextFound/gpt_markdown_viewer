@@ -5,6 +5,7 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'providers/markdown.provider.dart';
+import 'widgets/interactive_checkbox.widget.dart';
 import 'widgets/reorderable_list.widget.dart';
 
 void main() {
@@ -563,6 +564,24 @@ class _MarkdownValidatorScreenState
               padding: const EdgeInsets.all(20),
               child: GptMarkdown(
                 ref.watch(markdownProvider),
+                checkBoxBuilder: (context, isChecked, child, config) {
+                  return InteractiveCheckbox(
+                    isChecked: isChecked,
+                    child: child,
+                    onChanged: (newValue) {
+                      final rawText = config.rawText;
+                      if (rawText != null) {
+                        ref
+                            .read(markdownProvider.notifier)
+                            .toggleCheckbox(rawText, newValue);
+                        // Sync controller with updated markdown
+                        _controller.removeListener(_onTextChanged);
+                        _controller.text = ref.read(markdownProvider);
+                        _controller.addListener(_onTextChanged);
+                      }
+                    },
+                  );
+                },
                 listGroupBuilder: (context, items, config) {
                   return ReorderableMarkdownList(
                     items: items,

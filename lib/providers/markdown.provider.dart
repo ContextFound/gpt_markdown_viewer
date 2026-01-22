@@ -39,6 +39,14 @@ LaTeX support: \$E = mc^2\$
 | Lists | ✓ |
 | Tables | ✓ |
 | LaTeX | ✓ |
+
+### Reorderable List Demo
+
+Drag and drop to reorder these items:
+
+- First item
+- Second item
+- Third item
 ''';
 
 final markdownProvider = NotifierProvider<MarkdownNotifier, String>(
@@ -79,6 +87,26 @@ class MarkdownNotifier extends Notifier<String> {
 
     // Replace the original list with the new list in the markdown source
     state = state.replaceFirst(originalListString, newListString);
+  }
+
+  void toggleCheckbox(String label, bool newValue) {
+    final escapedLabel = RegExp.escape(label);
+
+    if (newValue) {
+      // Changing from unchecked [ ] to checked [x]
+      final uncheckedPattern = RegExp(
+        r'\[ \]\s+' + escapedLabel,
+        multiLine: true,
+      );
+      state = state.replaceFirst(uncheckedPattern, '[x] $label');
+    } else {
+      // Changing from checked [x] to unchecked [ ]
+      final checkedPattern = RegExp(
+        r'\[[xX]\]\s+' + escapedLabel,
+        multiLine: true,
+      );
+      state = state.replaceFirst(checkedPattern, '[ ] $label');
+    }
   }
 
   String _buildListLine(ListGroupItem item, int index) {

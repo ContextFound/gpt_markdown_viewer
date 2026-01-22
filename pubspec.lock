@@ -181,7 +181,7 @@ packages:
     description:
       path: "."
       ref: my-fork-main
-      resolved-ref: "5d2d69da01eec20a498b450825817f26f672146d"
+      resolved-ref: "1b45dffa710b29a5637133fc33e9683502fe9c76"
       url: "https://github.com/ContextFound/gpt_markdown.git"
     source: git
     version: "1.1.5"
