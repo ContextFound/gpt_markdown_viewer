@@ -22,6 +22,7 @@ class MarkdownValidatorApp extends StatefulWidget {
 class _MarkdownValidatorAppState extends State<MarkdownValidatorApp> {
   ThemeMode _themeMode = ThemeMode.dark;
   Color _seedColor = Colors.blue;
+  bool _customBuildersEnabled = true;
 
   static const Map<String, Color> colorOptions = {
     'Blue': Colors.blue,
@@ -46,6 +47,12 @@ class _MarkdownValidatorAppState extends State<MarkdownValidatorApp> {
   void _setSeedColor(Color color) {
     setState(() {
       _seedColor = color;
+    });
+  }
+
+  void _toggleCustomBuilders() {
+    setState(() {
+      _customBuildersEnabled = !_customBuildersEnabled;
     });
   }
 
@@ -77,6 +84,8 @@ class _MarkdownValidatorAppState extends State<MarkdownValidatorApp> {
         seedColor: _seedColor,
         colorOptions: colorOptions,
         onColorChanged: _setSeedColor,
+        customBuildersEnabled: _customBuildersEnabled,
+        onToggleCustomBuilders: _toggleCustomBuilders,
       ),
     );
   }
@@ -90,6 +99,8 @@ class MarkdownValidatorScreen extends ConsumerStatefulWidget {
     required this.seedColor,
     required this.colorOptions,
     required this.onColorChanged,
+    required this.customBuildersEnabled,
+    required this.onToggleCustomBuilders,
   });
 
   final bool isDarkMode;
@@ -97,6 +108,8 @@ class MarkdownValidatorScreen extends ConsumerStatefulWidget {
   final Color seedColor;
   final Map<String, Color> colorOptions;
   final ValueChanged<Color> onColorChanged;
+  final bool customBuildersEnabled;
+  final VoidCallback onToggleCustomBuilders;
 
   @override
   ConsumerState<MarkdownValidatorScreen> createState() =>
@@ -197,6 +210,68 @@ class _MarkdownValidatorScreenState
                       ),
                     ),
                     const Spacer(),
+                    // Custom Builders Toggle
+                    Tooltip(
+                      message: 'Enable custom builders like checkboxes and list items',
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: widget.onToggleCustomBuilders,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: widget.customBuildersEnabled
+                                  ? const Color(0xFF00FF88).withValues(alpha: 0.1)
+                                  : isDark
+                                      ? const Color(0xFF666666).withValues(alpha: 0.1)
+                                      : const Color(0xFF999999).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: widget.customBuildersEnabled
+                                    ? const Color(0xFF00FF88).withValues(alpha: 0.3)
+                                    : isDark
+                                        ? const Color(0xFF666666).withValues(alpha: 0.3)
+                                        : const Color(0xFF999999).withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  widget.customBuildersEnabled
+                                      ? Icons.toggle_on_rounded
+                                      : Icons.toggle_off_rounded,
+                                  size: 20,
+                                  color: widget.customBuildersEnabled
+                                      ? const Color(0xFF00FF88)
+                                      : isDark
+                                          ? const Color(0xFF666666)
+                                          : const Color(0xFF999999),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Custom Builders',
+                                  style: TextStyle(
+                                    color: widget.customBuildersEnabled
+                                        ? const Color(0xFF00FF88)
+                                        : isDark
+                                            ? const Color(0xFF666666)
+                                            : const Color(0xFF999999),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     // Color Picker Dropdown
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -563,39 +638,44 @@ class _MarkdownValidatorScreenState
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: GptMarkdown(
+                key: ValueKey('markdown_${widget.customBuildersEnabled}'),
                 ref.watch(markdownProvider),
-                checkBoxBuilder: (context, isChecked, child, config) {
-                  return InteractiveCheckbox(
-                    isChecked: isChecked,
-                    child: child,
-                    onChanged: (newValue) {
-                      final rawText = config.rawText;
-                      if (rawText != null) {
-                        ref
-                            .read(markdownProvider.notifier)
-                            .toggleCheckbox(rawText, newValue);
-                        // Sync controller with updated markdown
-                        _controller.removeListener(_onTextChanged);
-                        _controller.text = ref.read(markdownProvider);
-                        _controller.addListener(_onTextChanged);
+                checkBoxBuilder: widget.customBuildersEnabled
+                    ? (context, isChecked, child, config) {
+                        return InteractiveCheckbox(
+                          isChecked: isChecked,
+                          child: child,
+                          onChanged: (newValue) {
+                            final rawText = config.rawText;
+                            if (rawText != null) {
+                              ref
+                                  .read(markdownProvider.notifier)
+                                  .toggleCheckbox(rawText, newValue);
+                              // Sync controller with updated markdown
+                              _controller.removeListener(_onTextChanged);
+                              _controller.text = ref.read(markdownProvider);
+                              _controller.addListener(_onTextChanged);
+                            }
+                          },
+                        );
                       }
-                    },
-                  );
-                },
-                listGroupBuilder: (context, items, config) {
-                  return ReorderableMarkdownList(
-                    items: items,
-                    onReorder: (oldIndex, newIndex) {
-                      ref
-                          .read(markdownProvider.notifier)
-                          .reorderListItems(items, oldIndex, newIndex);
-                      // Sync controller with updated markdown
-                      _controller.removeListener(_onTextChanged);
-                      _controller.text = ref.read(markdownProvider);
-                      _controller.addListener(_onTextChanged);
-                    },
-                  );
-                },
+                    : null,
+                listGroupBuilder: widget.customBuildersEnabled
+                    ? (context, items, config) {
+                        return ReorderableMarkdownList(
+                          items: items,
+                          onReorder: (oldIndex, newIndex) {
+                            ref
+                                .read(markdownProvider.notifier)
+                                .reorderListItems(items, oldIndex, newIndex);
+                            // Sync controller with updated markdown
+                            _controller.removeListener(_onTextChanged);
+                            _controller.text = ref.read(markdownProvider);
+                            _controller.addListener(_onTextChanged);
+                          },
+                        );
+                      }
+                    : null,
                 onLinkTap: (url, title) async {
                   final uri = Uri.tryParse(url);
                   if (uri != null && await canLaunchUrl(uri)) {
