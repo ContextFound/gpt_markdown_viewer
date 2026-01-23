@@ -28,10 +28,20 @@ LaTeX support: \$E = mc^2\$
 
 ---
 
-[ ] checkbox 1
-[x] checkbox 2
+### Interactive Checkboxes
+
+[ ] Click me to check this box
+[x] Click me to uncheck this box
+[ ] Try toggling this checkbox too
+
+### Radio Buttons - Pick your favorite!
+
+( ) Select me as your choice
+(x) I'm currently selected - click another!
+( ) Click to switch to this option
+( ) Or pick this one instead
+
 [Click Here](https://github.com/Infinitix-LLC/gpt_markdown "title")
-[ ] checkbox 4
 
 | Feature | Supported |
 |---------|-----------|
@@ -106,6 +116,41 @@ class MarkdownNotifier extends Notifier<String> {
         multiLine: true,
       );
       state = state.replaceFirst(checkedPattern, '[ ] $label');
+    }
+  }
+
+  void selectRadioButton(String label) {
+    // Find the radio button group containing this label
+    // Radio buttons are on consecutive lines starting with ( ) or (x)
+    final radioPattern = RegExp(
+      r'(\([xX ]\)\s+.+\n?)+',
+      multiLine: true,
+    );
+
+    final matches = radioPattern.allMatches(state);
+    for (final match in matches) {
+      final group = match.group(0)!;
+      // Check if this group contains our label
+      if (group.contains(label)) {
+        // Deselect all radio buttons in this group and select the clicked one
+        var newGroup = group;
+        
+        // First, deselect all (change (x) to ( ))
+        newGroup = newGroup.replaceAllMapped(
+          RegExp(r'\([xX]\)(\s+)'),
+          (m) => '( )${m.group(1)}',
+        );
+        
+        // Then select the one with our label
+        final escapedLabel = RegExp.escape(label);
+        newGroup = newGroup.replaceFirstMapped(
+          RegExp(r'\( \)(\s+)' + escapedLabel),
+          (m) => '(x)${m.group(1)}$label',
+        );
+        
+        state = state.replaceFirst(group, newGroup);
+        break;
+      }
     }
   }
 

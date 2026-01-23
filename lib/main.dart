@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'providers/markdown.provider.dart';
 import 'widgets/interactive_checkbox.widget.dart';
+import 'widgets/interactive_radiobutton.widget.dart';
 import 'widgets/reorderable_list.widget.dart';
 
 void main() {
@@ -672,6 +673,26 @@ class _MarkdownValidatorScreenState
                             _controller.removeListener(_onTextChanged);
                             _controller.text = ref.read(markdownProvider);
                             _controller.addListener(_onTextChanged);
+                          },
+                        );
+                      }
+                    : null,
+                radioButtonBuilder: widget.customBuildersEnabled
+                    ? (context, isSelected, child, config) {
+                        return InteractiveRadioButton(
+                          isSelected: isSelected,
+                          child: child,
+                          onChanged: (_) {
+                            final rawText = config.rawText;
+                            if (rawText != null) {
+                              ref
+                                  .read(markdownProvider.notifier)
+                                  .selectRadioButton(rawText);
+                              // Sync controller with updated markdown
+                              _controller.removeListener(_onTextChanged);
+                              _controller.text = ref.read(markdownProvider);
+                              _controller.addListener(_onTextChanged);
+                            }
                           },
                         );
                       }
